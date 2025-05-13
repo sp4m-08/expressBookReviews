@@ -3,26 +3,79 @@ const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
-let users = [];
+let users = [ { username: 'user3', password: 'pass123' } ];
 
 const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
+    if(username.length>1 && username.length<14){
+        return true
+    }else{
+        return false
+    }
 }
 
 const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
-}
+    return users.some(user => user.username === username && user.password === password);
+};
+
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    console.log(req.body)
+    const username = req.body.username;
+    const password = req.body.password;
+
+    console.log(username)
+    console.log(password)
+    console.log(users)
+
+
+    if (!username || !password) {
+        return res.status(404).json({ message: "username or password is missing" });
+    }
+
+    if (!authenticatedUser(username,password)) {
+        return res.status(404).json({ message: "Invalid detials! check username or password" });
+    }else{
+        let accesstoken = jwt.sign({data: password},'access',{expiresIn:60*60})
+        req.session.authorization = {accesstoken,username}
+        return res.status(200).json({message:"login successful!"})
+    }
 });
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  const isbn_no = req.params.isbn
+
+  const review = req.query.review; 
+
+  if (!review) {
+      return res.status(400).json({ message: "review content is missing!" });
+  }
+  let bookreviews={}
+
+  if(req.session.authorization){
+      let token = req.session.authorization['accesstoken']
+
+      jwt.verify(token,access,(err,user)=>{
+          if(!err){
+              req.session.authorization.user = user
+              if(!bookreviews[isbn_no]){
+                  bookreviews[isbn_no]={}
+              }
+              bookreviews[isbn_no].user = review
+              
+              console.log(bookreviews[isbn_no].user)
+            console.log(bookreviews)
+            return res.send(200).json({message:"review logged"})
+              
+          }else{
+              return res.status(404).json({message:"could not verify user"})
+          }
+      })
+  }
+  else{
+      return res.status(404).json({message:"user not logged in!"})
+  }
 });
 
 module.exports.authenticated = regd_users;
