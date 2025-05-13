@@ -11,7 +11,8 @@ app.use(express.json());
 app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
 
 app.use("/customer/auth/*", function auth(req,res,next){
-//Write the authenication mechanism here
+
+    return res.status(403).json({message:"message"})
 });
  
 const PORT =5000;
